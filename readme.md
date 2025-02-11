@@ -4,6 +4,10 @@ Training and testing data can be obtained from:
 2. https://www.marketwatch.com/
 3. https://www.dukascopy.com/swiss/english/marketwatch/historical/
 
+For crypto, training and testing data can be obtained from:
+
+1. https://www.binance.com/my-MM/support/faq/how-to-download-historical-market-data-on-binance-5810ae42176b4770b880ce1f14932262
+
 Things to consider when making an Depp Learning Trading Algo:
 
 1. Slippage
