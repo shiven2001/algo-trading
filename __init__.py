@@ -21,3 +21,13 @@ register(
         'frame_bound': (30, len(data.STOCKS_APPL))
     }
 )
+
+register(
+    id='multi-stocks-v0',
+    entry_point='gym_envs.multi_stocks_env:MultiStocksEnv',
+    kwargs={
+        'df': deepcopy(data.STOCKS_APPL_GME),
+        'window_size': 30,
+        'frame_bound': (30, len(data.STOCKS_APPL_GME))
+    }
+)
