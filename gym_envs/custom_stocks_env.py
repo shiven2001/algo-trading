@@ -3,12 +3,10 @@ from enum import Enum
 import numpy as np
 import matplotlib.pyplot as plt
 import gymnasium as gym
-import random
 
 class Actions(Enum):
     Sell = 0
     Buy = 1
-
 
 class Positions(Enum):
     Short = 0
@@ -16,30 +14,33 @@ class Positions(Enum):
 
     def opposite(self):
         return Positions.Short if self == Positions.Long else Positions.Long
+    
+class CustomStocksEnv(gym.Env):
 
+    metadata = {'render_modes': ['human'], 'render_fps': 3}
 
-class MultiTradingEnv(gym.Env):
-    def __init__(self, dfs, window_size, render_mode=None):
+    def __init__(self, df, trade_fee_percent, window_size, frame_bound, render_mode=None):
+        super().__init__()  # No arguments required
 
-        assert isinstance(dfs, dict), "dfs should be a dictionary of stock data."
-        assert all(df.ndim == 2 for df in dfs.values()), "Each DataFrame must be 2D."
+        assert df.ndim == 2
         assert render_mode is None or render_mode in self.metadata['render_modes']
+        assert len(frame_bound) == 2
 
-        self.dfs = dfs  # Store multiple stock datasets
-        self.stock_names = list(dfs.keys())  # Store stock names
-        self.window_size = window_size
+        self.frame_bound = frame_bound  # Ensure this is set before accessing it
         self.render_mode = render_mode
+        self.trade_fee_percent = trade_fee_percent
+        self.df = df
+        self.window_size = window_size
 
-        # Initial selection of a stock
-        self.current_stock = None
-        self.df = None
-        self.prices, self.signal_features = None, None
+        self.prices, self.signal_features = self._process_data()
 
-        # Define action & observation spaces
+        self.shape = (window_size, self.signal_features.shape[1])
+
+        # action_space and observation_space
         self.action_space = gym.spaces.Discrete(len(Actions))
         INF = 1e10
         self.observation_space = gym.spaces.Box(
-            low=-INF, high=INF, shape=(window_size, 1), dtype=np.float32
+            low=-INF, high=INF, shape=self.shape, dtype=np.float32,
         )
 
         # episode
@@ -57,15 +58,8 @@ class MultiTradingEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
-
-        # Randomly select a stock at the start of each episode
-        self.current_stock = random.choice(self.stock_names)
-        self.df = self.dfs[self.current_stock]
-        self.prices, self.signal_features = self._process_data()
-
-        self._start_tick = self.window_size
-        self._end_tick = len(self.prices) - 1
         self.action_space.seed(int((self.np_random.uniform(0, seed if seed is not None else 1))))
+
         self._truncated = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
@@ -205,13 +199,77 @@ class MultiTradingEnv(gym.Env):
         plt.show()
 
     def _process_data(self):
-        raise NotImplementedError
+        prices = self.df.loc[:, 'Close'].to_numpy()
+
+        prices[self.frame_bound[0] - self.window_size]  # validate index (TODO: Improve validation)
+        prices = prices[self.frame_bound[0]-self.window_size:self.frame_bound[1]]
+
+
+        # signal_features is difference between prices
+        diff = np.insert(np.diff(prices), 0, 0)
+        signal_features = np.column_stack((prices, diff))
+
+        return prices.astype(np.float32), signal_features.astype(np.float32)
 
     def _calculate_reward(self, action):
-        raise NotImplementedError
+        step_reward = 0
+
+        trade = False
+        if (
+            (action == Actions.Buy.value and self._position == Positions.Short) or
+            (action == Actions.Sell.value and self._position == Positions.Long)
+        ):
+            trade = True
+
+        if trade:
+            current_price = self.prices[self._current_tick]
+            last_trade_price = self.prices[self._last_trade_tick]
+            price_diff = current_price - last_trade_price
+
+            if self._position == Positions.Long:
+                step_reward += price_diff
+
+        return step_reward
 
     def _update_profit(self, action):
-        raise NotImplementedError
+        trade = False
+        if (
+            (action == Actions.Buy.value and self._position == Positions.Short) or
+            (action == Actions.Sell.value and self._position == Positions.Long)
+        ):
+            trade = True
 
-    def max_possible_profit(self):  # trade fees are ignored
-        raise NotImplementedError
+        if trade or self._truncated:
+            current_price = self.prices[self._current_tick]
+            last_trade_price = self.prices[self._last_trade_tick]
+
+            if self._position == Positions.Long:
+                shares = (self._total_profit * (1 - self.trade_fee_percent)) / last_trade_price
+                self._total_profit = (shares * (1 - self.trade_fee_percent)) * current_price
+
+    def max_possible_profit(self):
+        current_tick = self._start_tick
+        last_trade_tick = current_tick - 1
+        profit = 1.
+
+        while current_tick <= self._end_tick:
+            position = None
+            if self.prices[current_tick] < self.prices[current_tick - 1]:
+                while (current_tick <= self._end_tick and
+                       self.prices[current_tick] < self.prices[current_tick - 1]):
+                    current_tick += 1
+                position = Positions.Short
+            else:
+                while (current_tick <= self._end_tick and
+                       self.prices[current_tick] >= self.prices[current_tick - 1]):
+                    current_tick += 1
+                position = Positions.Long
+
+            if position == Positions.Long:
+                current_price = self.prices[current_tick - 1]
+                last_trade_price = self.prices[last_trade_tick]
+                shares = profit / last_trade_price
+                profit = shares * current_price
+            last_trade_tick = current_tick - 1
+
+        return profit
