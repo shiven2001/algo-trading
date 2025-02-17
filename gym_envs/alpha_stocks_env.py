@@ -15,7 +15,7 @@ class Positions(Enum):
     def opposite(self):
         return Positions.Short if self == Positions.Long else Positions.Long
     
-class CustomStocksEnv(gym.Env):
+class AlphaStocksEnv(gym.Env):
 
     metadata = {'render_modes': ['human'], 'render_fps': 3}
 
@@ -65,8 +65,8 @@ class CustomStocksEnv(gym.Env):
         self._last_trade_tick = self._current_tick - 1
         self._position = Positions.Short
         self._position_history = (self.window_size * [None]) + [self._position]
-        self._total_reward = 0.
-        self._total_profit = 1.  # unit
+        self._total_reward = 0.0
+        self._total_profit = 1.0  # unit
         self._first_rendering = True
         self.history = {}
 
@@ -227,7 +227,9 @@ class CustomStocksEnv(gym.Env):
             price_diff = current_price - last_trade_price
 
             if self._position == Positions.Long:
-                step_reward += price_diff
+                step_reward = price_diff
+            else:
+                step_reward = -price_diff  # Profit when shorting and price drops
 
         return step_reward
 
@@ -244,8 +246,8 @@ class CustomStocksEnv(gym.Env):
             last_trade_price = self.prices[self._last_trade_tick]
 
             if self._position == Positions.Long:
-                shares = (self._total_profit * (1 - self.trade_fee_percent)) / last_trade_price
-                self._total_profit = (shares * (1 - self.trade_fee_percent)) * current_price
+                shares = (self._total_profit * (1 - self.trade_fee_percent)) / last_trade_price  # fee on entry
+                self._total_profit = (shares * (1 - self.trade_fee_percent)) * current_price  # Fee on exit
 
     def max_possible_profit(self):
         current_tick = self._start_tick

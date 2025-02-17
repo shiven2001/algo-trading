@@ -27,8 +27,29 @@ register(
 )
 
 register(
-    id='custom-stocks-v0',
-    entry_point='gym_envs.custom_stocks_env:CustomStocksEnv',
+    id='zero-stocks-v0',
+    entry_point='gym_envs.zero_stocks_env:ZeroStocksEnv',
+    kwargs={
+        'df': deepcopy(data.STOCKS_APPL),
+        'window_size': 30,
+        'frame_bound': (30, len(data.STOCKS_APPL))
+    }
+)
+
+register(
+    id='alpha-stocks-v0',
+    entry_point='gym_envs.alpha_stocks_env:AlphaStocksEnv',
+    kwargs={
+        'df': deepcopy(data.STOCKS_APPL),
+        'window_size': 30,
+        'frame_bound': (30, len(data.STOCKS_APPL))
+    }
+)
+
+
+register(
+    id='beta-stocks-v0',
+    entry_point='gym_envs.beta_stocks_env:BetaStocksEnv',
     kwargs={
         'df': deepcopy(data.STOCKS_APPL),
         'window_size': 30,
