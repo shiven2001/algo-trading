@@ -119,3 +119,11 @@ What it randomizes: The actions (Buy/Sell) and potentially other random processe
    Cons:
    Slightly more complex than a regular LSTM.
    Requires additional computational resources.
+
+
+### COnsiderations on trading frame (hypothesis)
+1. The market needs have large volume (>200mil 24H)
+2. The shorter the timeframe, the better the results
+3. Better results with price action, and news sourcing
+4. Better if can do market sentiment analyzsis
+4. better if can do corelation of news to trading decisions
