@@ -43,7 +43,7 @@ Settlement Fee: $0.003 per share.
 
 “rt​\=log(Pt−1​Pt​​)”
 
-###Alpha Env:
+### Alpha Env:
 
 1. Actions
    The agent can take two discrete actions, represented by the Actions enum:
@@ -81,3 +81,41 @@ Settlement Fee: $0.003 per share.
 9. Data Processing
    \_process_data(): Extracts closing prices and computes price differences.
    Uses self.df, which is assumed to be a Pandas DataFrame containing stock price data.
+
+### Seed Purpose
+
+Use a seed for debugging and hyperparameter tuning.
+Remove the seed for final training and real-world deployment.
+So, during testing & debugging, use seed=42.
+For live trading & final training, do NOT set a seed so the bot generalizes better.
+What it randomizes: The actions (Buy/Sell) and potentially other random processes within the environment (e.g., exploration in an RL setup).
+
+### RL Policy Network
+
+1. MlpPolicy (Multi-Layer Perceptron Policy)
+   Description: Uses a standard feedforward neural network (MLP) with two hidden layers of 64 neurons each.
+   Best for: Structured tabular data (like trading features from stock prices, indicators, etc.).
+   Pros:
+   Simple and efficient.
+   Suitable for small to medium-sized state spaces.
+   Cons:
+   Cannot capture sequential dependencies over time.
+   Ignores past observations (which can be crucial in trading).
+2. MlpLstmPolicy (MLP + LSTM)
+   Description: Combines an MLP for feature extraction with an LSTM (Long Short-Term Memory) network for handling sequential data.
+   Best for: Time-series data (like stock prices, technical indicators).
+   Pros:
+   Captures temporal dependencies.
+   Useful when past price movements impact future decisions.
+   Cons:
+   Slower to train due to recurrent connections.
+   Requires more memory and computation.
+3. MlpLnLstmPolicy (MLP + Layer-Normalized LSTM)
+   Description: Similar to MlpLstmPolicy but with Layer Normalization (LN) applied to LSTM layers, stabilizing training.
+   Best for: Time-series data with noisy patterns (like volatile markets).
+   Pros:
+   More stable training.
+   Helps when training large LSTM networks.
+   Cons:
+   Slightly more complex than a regular LSTM.
+   Requires additional computational resources.
