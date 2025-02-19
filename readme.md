@@ -136,3 +136,8 @@ Representation Collapse: Over extensive training, the neural network's ability t
 https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.atlantis-press.com/article/125989750.pdf&ved=2ahUKEwin0PHil8-LAxUoSGwGHZbYH0EQFnoECBIQAw&usg=AOvVaw1XjzFZ5KKURxleY65QSo6o
 
 https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://arxiv.org/html/2411.07585v1&ved=2ahUKEwin0PHil8-LAxUoSGwGHZbYH0EQFnoECCMQAQ&usg=AOvVaw0fdkQwIdCf9cGXaKmiuMPL
+
+## Repos
+
+https://github.com/AminHP/gym-anytrading
+https://github.com/orgs/AI4Finance-Foundation/repositories
