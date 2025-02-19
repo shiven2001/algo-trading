@@ -82,6 +82,15 @@ Settlement Fee: $0.003 per share.
    \_process_data(): Extracts closing prices and computes price differences.
    Uses self.df, which is assumed to be a Pandas DataFrame containing stock price data.
 
+
+### Beta Env:
+3. Rewards
+   If the agent executes a trade, the reward is based on the price difference from the last trade:
+   Long position: Reward is the price increase.
+   Short position: Reward is the price decrease.
+   If trade is made, the reward is -0.001.
+
+
 ### Seed Purpose
 
 Use a seed for debugging and hyperparameter tuning.
@@ -93,37 +102,16 @@ What it randomizes: The actions (Buy/Sell) and potentially other random processe
 ### RL Policy Network
 
 1. MlpPolicy (Multi-Layer Perceptron Policy)
-   Description: Uses a standard feedforward neural network (MLP) with two hidden layers of 64 neurons each.
-   Best for: Structured tabular data (like trading features from stock prices, indicators, etc.).
-   Pros:
-   Simple and efficient.
-   Suitable for small to medium-sized state spaces.
-   Cons:
-   Cannot capture sequential dependencies over time.
-   Ignores past observations (which can be crucial in trading).
 2. MlpLstmPolicy (MLP + LSTM)
-   Description: Combines an MLP for feature extraction with an LSTM (Long Short-Term Memory) network for handling sequential data.
-   Best for: Time-series data (like stock prices, technical indicators).
-   Pros:
-   Captures temporal dependencies.
-   Useful when past price movements impact future decisions.
-   Cons:
-   Slower to train due to recurrent connections.
-   Requires more memory and computation.
 3. MlpLnLstmPolicy (MLP + Layer-Normalized LSTM)
-   Description: Similar to MlpLstmPolicy but with Layer Normalization (LN) applied to LSTM layers, stabilizing training.
-   Best for: Time-series data with noisy patterns (like volatile markets).
-   Pros:
-   More stable training.
-   Helps when training large LSTM networks.
-   Cons:
-   Slightly more complex than a regular LSTM.
-   Requires additional computational resources.
 
-
-### COnsiderations on trading frame (hypothesis)
+### Considerations on trading frame (hypothesis)
 1. The market needs have large volume (>200mil 24H)
 2. The shorter the timeframe, the better the results
 3. Better results with price action, and news sourcing
 4. Better if can do market sentiment analyzsis
 4. better if can do corelation of news to trading decisions
+
+### PPO performance collapse issue
+Representation Collapse: Over extensive training, the neural network's ability to represent diverse states can deteriorate, leading to a decline in performance. Loss of Plasticity: The model becomes less adaptable to new information, hindering its learning capability.
+
