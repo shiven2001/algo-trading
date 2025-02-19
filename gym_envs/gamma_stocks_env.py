@@ -17,7 +17,7 @@ class Positions(Enum):
     def opposite(self):
         return Positions.Short if self == Positions.Long else Positions.Long
     
-class BetaStocksEnv(gym.Env):
+class GammaStocksEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 3}
     def __init__(self, df, trade_fee_percent, capital, window_size, frame_bound, render_mode=None):
         super().__init__()  # No arguments required
@@ -69,6 +69,7 @@ class BetaStocksEnv(gym.Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
+        self.np_random = np.random.RandomState(seed)
         self.action_space.seed(seed)
         self._truncated = False
         self.initial_capital = self.capital
@@ -124,6 +125,10 @@ class BetaStocksEnv(gym.Env):
         info = self._get_info()
         # history is total_reward, total_profit, position
         self._update_history(info)
+
+        # Check if the episode has been truncated and reset the environment
+        if self._truncated:
+            self.reset()
 
         if self.render_mode == 'human':
             self._render_frame()
@@ -247,15 +252,20 @@ class BetaStocksEnv(gym.Env):
             trade = True
         # if trade was executed, then 
         if trade:
-            #current_price = self._get_trade_price(self.prices[self._current_tick])
-            #last_trade_price = self._get_trade_price(self.prices[self._last_trade_tick])
-            current_price = self.prices[self._current_tick]
-            last_trade_price = self.prices[self._last_trade_tick]
+            current_price = self._get_trade_price(price=self.prices[self._current_tick],action=action)
+            last_trade_price = self._get_trade_price(price=self.prices[self._last_trade_tick],action=action)
+            #current_price = self.prices[self._current_tick]
+            #last_trade_price = self.prices[self._last_trade_tick]
+
+            # Reward Function
             price_diff = current_price - last_trade_price
+            # Calculate log return
+            log_return = np.log(current_price / last_trade_price)
+
             if self._position == Positions.Long:
-                step_reward = price_diff
+                step_reward = log_return
             elif self._position == Positions.Short:
-                step_reward = -price_diff  # Profit when shorting and price drops
+                step_reward = -log_return  # Profit when shorting and price drops
 
             # Add risk-adjusted reward (Sharpe Ratio component)
             #step_reward /= np.std(self.prices[:self._current_tick] + 1e-8)
@@ -278,8 +288,8 @@ class BetaStocksEnv(gym.Env):
             trade = True
 
         if trade or self._truncated:
-            entry_price = self.prices[self._last_trade_tick]
-            exit_price = self.prices[self._current_tick]
+            entry_price = self._get_trade_price(price=self.prices[self._last_trade_tick],action=action)
+            exit_price = self._get_trade_price(price=self.prices[self._current_tick],action=action)
 
             # Calculate profit based on the price difference
             if self._position == Positions.Long:
@@ -296,14 +306,25 @@ class BetaStocksEnv(gym.Env):
     
     def _calculate_buy_hold_profit(self):
         """Calculates profit if we simply bought at the start and sold at the end."""
-        #entry_price = self._get_trade_price(self.prices[0 + self.window_size])  # First price
-        #exit_price = self._get_trade_price(self.prices[len(self.prices) - 1])  # Last price
-        entry_price = self.prices[0 + self.window_size]  # First price
-        exit_price = self.prices[len(self.prices) - 1]  # Last price
+        entry_price = self._get_trade_price(price=self.prices[0 + self.window_size],action=1)  # First price
+        exit_price = self._get_trade_price(price=self.prices[len(self.prices) - 1], action=0)  # Last price
+        #entry_price = self.prices[0 + self.window_size]  # First price
+        #exit_price = self.prices[len(self.prices) - 1]  # Last price
         shares = (self.capital * (1 - self.trade_fee_percent)) / entry_price  # Fee on entry
         buy_hold_profit = (shares * (1 - self.trade_fee_percent)) * exit_price  # Fee on exit
         return buy_hold_profit
 
-    def _get_trade_price(self, price, slippage_percent=0.001):
-        """Calculates slippage conpensation."""
-        return price * (1 + self.np_random.uniform(-slippage_percent, slippage_percent))  
+    def _get_trade_price(self, price, action, slippage_mean=0, slippage_std=0.001):
+        volatility = np.std(self.prices[max(0, self._current_tick - 50):self._current_tick])  # Look-back window
+        slippage_std = volatility * 0.001  # Adjust slippage with volatility
+        """Calculates slippage compensation."""
+        # Simulate slippage using a normal distribution
+        slippage = self.np_random.normal(slippage_mean, slippage_std)
+        if action == Actions.Buy.value:
+            # Buy action: slippage tends to increase the price (positive slippage)
+            return price * (1 + slippage)
+        elif action == Actions.Sell.value:
+            # Sell action: slippage tends to decrease the price (negative slippage)
+            return price * (1 - slippage)
+        else:
+            return price

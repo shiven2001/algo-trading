@@ -1,4 +1,4 @@
-Training and testing data can be obtained from:
+## Training and testing data can be obtained from:
 
 1. yfinance
 2. https://www.marketwatch.com/
@@ -8,40 +8,20 @@ For crypto, training and testing data can be obtained from:
 
 1. https://www.binance.com/my-MM/support/faq/how-to-download-historical-market-data-on-binance-5810ae42176b4770b880ce1f14932262
 
-Things to consider when making an Depp Learning Trading Algo:
+### Things to consider when making an Sim2Real Trading:
 
 1. Slippage
 2. Trading Fees
-3. Leverage
-4. etc.
+3. Transaction Costs and Fees
+4. Market Impact of trade (negligible if vol. is high)
+5. Leverage
+6. Latency and Execution Delay
+7. Order Types (Market Orders vs. Limit Orders)
+8. Risk Management (Position Limits, Margin, Stop Loss, etc.)
+9. Transaction Timing and Market Hours
+10. etc.
 
-Generally, size of trade should be 5%-10% if the total account.
-
-Test first without commision fees. It it works consistenly, then signal is good. Then need to integrate fees into the strategy.
-
-Good way to make the market is to first identify the market:
-
-1. Trending Market (Uptrend or Downtrend)
-2. Consolidating Market
-
-For Consolidating Market, bet on reversals. For Trending Market, bet on trend continuation.
-
-Approach:
-
-Start with one stock (e.g., AAPL) to fine-tune your RL agent.
-Once it’s stable, train on multiple similar stocks (e.g., tech stocks like AAPL, MSFT, GOOGL).
-Later, train on a mixed portfolio to generalize further.
-
-When trading Apple (AAPL) stock on Futubull, the platform charges the following fees:
-Commission Fee: $0.0049 per share, with a minimum of $0.99 per order and a maximum of 0.5% of the transaction amount.
-Platform Fee: $0.005 per share, with a minimum of $1 per order and a maximum of 0.5% of the transaction amount.
-Settlement Fee: $0.003 per share.
-
-1. Reward Based on Log Returns
-   Instead of price difference. Logarithmic returns scale better over different price ranges.
-   More stable for learning.
-
-“rt​\=log(Pt−1​Pt​​)”
+## RL Environments
 
 ### Alpha Env:
 
@@ -82,14 +62,48 @@ Settlement Fee: $0.003 per share.
    \_process_data(): Extracts closing prices and computes price differences.
    Uses self.df, which is assumed to be a Pandas DataFrame containing stock price data.
 
-
 ### Beta Env:
+
 3. Rewards
    If the agent executes a trade, the reward is based on the price difference from the last trade:
    Long position: Reward is the price increase.
    Short position: Reward is the price decrease.
    If trade is made, the reward is -0.001.
 
+### Gamma Env:
+
+1. Actions
+   Added slippage into account based on actions.
+
+### Extras
+
+Generally, size of trade should be 5%-10% if the total account.
+
+Test first without commision fees. It it works consistenly, then signal is good. Then need to integrate fees into the strategy.
+
+Good way to make the market is to first identify the market:
+
+1. Trending Market (Uptrend or Downtrend)
+2. Consolidating Market
+
+For Consolidating Market, bet on reversals. For Trending Market, bet on trend continuation.
+
+Approach:
+
+Start with one stock (e.g., AAPL) to fine-tune your RL agent.
+Once it’s stable, train on multiple similar stocks (e.g., tech stocks like AAPL, MSFT, GOOGL).
+Later, train on a mixed portfolio to generalize further.
+
+When trading Apple (AAPL) stock on Futubull, the platform charges the following fees:
+Commission Fee: $0.0049 per share, with a minimum of $0.99 per order and a maximum of 0.5% of the transaction amount.
+Platform Fee: $0.005 per share, with a minimum of $1 per order and a maximum of 0.5% of the transaction amount.
+Settlement Fee: $0.003 per share.
+
+1. Reward Based on Log Returns
+   Instead of price difference. Logarithmic returns scale better over different price ranges.
+   More stable for learning.
+
+“rt​\=log(Pt−1​Pt​​)”
 
 ### Seed Purpose
 
@@ -106,12 +120,19 @@ What it randomizes: The actions (Buy/Sell) and potentially other random processe
 3. MlpLnLstmPolicy (MLP + Layer-Normalized LSTM)
 
 ### Considerations on trading frame (hypothesis)
+
 1. The market needs have large volume (>200mil 24H)
 2. The shorter the timeframe, the better the results
 3. Better results with price action, and news sourcing
 4. Better if can do market sentiment analyzsis
-4. better if can do corelation of news to trading decisions
+5. better if can do corelation of news to trading decisions
 
 ### PPO performance collapse issue
+
 Representation Collapse: Over extensive training, the neural network's ability to represent diverse states can deteriorate, leading to a decline in performance. Loss of Plasticity: The model becomes less adaptable to new information, hindering its learning capability.
 
+### Papers
+
+https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.atlantis-press.com/article/125989750.pdf&ved=2ahUKEwin0PHil8-LAxUoSGwGHZbYH0EQFnoECBIQAw&usg=AOvVaw1XjzFZ5KKURxleY65QSo6o
+
+https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://arxiv.org/html/2411.07585v1&ved=2ahUKEwin0PHil8-LAxUoSGwGHZbYH0EQFnoECCMQAQ&usg=AOvVaw0fdkQwIdCf9cGXaKmiuMPL

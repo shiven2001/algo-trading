@@ -57,4 +57,14 @@ register(
     }
 )
 
+register(
+    id='gamma-stocks-v0',
+    entry_point='gym_envs.gamma_stocks_env:GammaStocksEnv',
+    kwargs={
+        'df': deepcopy(data.STOCKS_APPL),
+        'window_size': 30,
+        'frame_bound': (30, len(data.STOCKS_APPL))
+    }
+)
+
 print(gym.registry.keys())  # List of registered environments
