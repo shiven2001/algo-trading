@@ -13,3 +13,6 @@ stable_baselines3==2.3.2
 torch==2.5.1
 tqdm==4.66.4
 yfinance==0.2.41
+
+# FinRL requirements.txt
+-r ./FinRL/requirements.txt
